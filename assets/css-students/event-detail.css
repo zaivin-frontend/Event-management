@@ -1,0 +1,356 @@
+.strong {
+  color: black;
+}
+.event-header {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.event-header img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.1);
+  transition: transform 0.3s ease;
+}
+
+.event-header:hover img {
+  transform: scale(1);
+}
+
+.event-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3),
+    rgba(0, 0, 0, 0.7)
+  );
+  display: flex;
+  align-items: flex-end;
+  padding: 2rem 0;
+}
+
+.event-overlay h1 {
+  color: white;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.event-meta {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.event-meta-item {
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.event-meta-item i {
+  font-size: 1.3rem;
+}
+
+.event-schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.event-schedule-item:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+.event-schedule-item i {
+  font-size: 1.5rem;
+  color: #044721;
+}
+
+.event-schedule-item .schedule-label {
+  font-weight: 600;
+  color: #333;
+  margin-right: 0.5rem;
+}
+
+.event-schedule-item .schedule-time {
+  color: #044721;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.event-location-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.event-location-item:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+.event-location-item i {
+  font-size: 1.5rem;
+  color: #044721;
+}
+
+.event-location-item .location-label {
+  font-weight: 600;
+  color: #333;
+  margin-right: 0.5rem;
+}
+
+.event-location-item .location-name {
+  color: #044721;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.registration-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.registration-info-item:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+.registration-info-item i {
+  font-size: 1.5rem;
+  color: #044721;
+}
+
+.registration-info-item .info-label {
+  font-weight: 600;
+  color: #333;
+  margin-right: 0.5rem;
+}
+
+.registration-info-item .info-value {
+  color: #044721;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.registration-status {
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  background: #f8f9fa;
+  color: #044721;
+  border: 2px solid #044721;
+}
+
+.registration-card h3 {
+  color: #044721;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid #044721;
+  display: inline-block;
+}
+
+.event-details-card {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.event-details-card h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
+.event-description {
+  color: #666;
+  line-height: 1.8;
+  font-size: 1.1rem;
+}
+
+.category-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  font-size: 0.9rem;
+  backdrop-filter: blur(5px);
+}
+
+.share-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.share-buttons button {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform 0.2s;
+}
+
+.share-buttons button:hover {
+  transform: translateY(-2px);
+}
+
+.share-facebook {
+  background-color: #1877f2;
+}
+
+.share-twitter {
+  background-color: #1da1f2;
+}
+
+.share-whatsapp {
+  background-color: #25d366;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #044721;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.back-button {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #333;
+  text-decoration: none;
+  backdrop-filter: blur(5px);
+  transition: transform 0.2s;
+}
+
+.back-button:hover {
+  transform: translateX(-5px);
+  color: #333;
+}
+
+.event-map {
+  height: 300px;
+  border-radius: 15px;
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.registration-card {
+  position: sticky;
+  top: 2rem;
+}
+
+.registration-card .btn {
+  padding: 1rem;
+  font-size: 1.1rem;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+
+.registration-card .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.registration-card .alert {
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .event-header {
+    height: 300px;
+  }
+
+  .event-overlay h1 {
+    font-size: 2rem;
+  }
+
+  .event-meta {
+    gap: 1rem;
+  }
+
+  .event-meta-item {
+    font-size: 1rem;
+  }
+
+  .event-details-card {
+    padding: 1.5rem;
+  }
+
+  .registration-card {
+    position: static;
+    margin-top: 2rem;
+  }
+}

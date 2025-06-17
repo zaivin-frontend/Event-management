@@ -15,68 +15,148 @@ $admin_id = $_SESSION['admin_id'];
 $admin_name = $_SESSION['admin_name'];
 $admin_email = $_SESSION['admin_email'];
 
-// Get dashboard statistics
+// Initialize statistics array
 $stats = [
     'total_events' => 0,
     'total_users' => 0,
     'total_registrations' => 0,
-    'active_events' => 0
+    'active_events' => 0,
+    'total_payments' => 0,
+    'pending_payments' => 0,
+    'approved_payments' => 0,
+    'rejected_payments' => 0
 ];
 
-// Get total events
-$query = "SELECT COUNT(*) as count FROM events";
-$result = $conn->query($query);
-if ($result) {
-    $stats['total_events'] = $result->fetch_assoc()['count'];
-}
-
-// Get total users
-$query = "SELECT COUNT(*) as count FROM users";
-$result = $conn->query($query);
-if ($result) {
-    $stats['total_users'] = $result->fetch_assoc()['count'];
-}
-
-// Get total registrations
-$query = "SELECT COUNT(*) as count FROM event_registrations";
-$result = $conn->query($query);
-if ($result) {
-    $stats['total_registrations'] = $result->fetch_assoc()['count'];
-}
-
-// Get active events
-$query = "SELECT COUNT(*) as count FROM events WHERE status = 'active'";
-$result = $conn->query($query);
-if ($result) {
-    $stats['active_events'] = $result->fetch_assoc()['count'];
-}
-
-// Get recent events
-$query = "SELECT e.*, 
-          (SELECT COUNT(*) FROM event_registrations WHERE event_id = e.id) as registration_count 
-          FROM events e 
-          ORDER BY e.created_at DESC LIMIT 5";
-$result = $conn->query($query);
-$recent_events = [];
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $recent_events[] = $row;
+try {
+    // Get total events
+    $query = "SELECT COUNT(*) as count FROM events";
+    $result = $conn->query($query);
+    if ($result) {
+        $stats['total_events'] = $result->fetch_assoc()['count'];
     }
-}
 
-// Get recent registrations
-$query = "SELECT er.*, u.first_name, u.last_name, e.title as event_title,
-          DATE_FORMAT(er.registration_date, '%Y-%m-%d') as formatted_date
-          FROM event_registrations er 
-          JOIN users u ON er.user_id = u.id 
-          JOIN events e ON er.event_id = e.id 
-          ORDER BY er.registration_date DESC LIMIT 5";
-$result = $conn->query($query);
-$recent_registrations = [];
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $recent_registrations[] = $row;
+    // Get total users
+    $query = "SELECT COUNT(*) as count FROM users";
+    $result = $conn->query($query);
+    if ($result) {
+        $stats['total_users'] = $result->fetch_assoc()['count'];
     }
+
+    // Get total registrations
+    $query = "SELECT COUNT(*) as count FROM event_registrations";
+    $result = $conn->query($query);
+    if ($result) {
+        $stats['total_registrations'] = $result->fetch_assoc()['count'];
+    }
+
+    // Get active events
+    $query = "SELECT COUNT(*) as count FROM events WHERE status = 'active'";
+    $result = $conn->query($query);
+    if ($result) {
+        $stats['active_events'] = $result->fetch_assoc()['count'];
+    }
+
+    // Get payment statistics
+    $query = "SELECT 
+        COUNT(*) as total_payments,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_payments,
+        SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_payments,
+        SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected_payments
+        FROM event_payments";
+    $result = $conn->query($query);
+    if ($result) {
+        $payment_stats = $result->fetch_assoc();
+        $stats['total_payments'] = $payment_stats['total_payments'];
+        $stats['pending_payments'] = $payment_stats['pending_payments'];
+        $stats['approved_payments'] = $payment_stats['approved_payments'];
+        $stats['rejected_payments'] = $payment_stats['rejected_payments'];
+    }
+
+    // Get recent events with registration count
+    $query = "SELECT e.*, 
+        (SELECT COUNT(*) FROM event_registrations WHERE event_id = e.id) as registration_count,
+        DATE_FORMAT(e.start_date, '%Y-%m-%d') as formatted_start_date,
+        DATE_FORMAT(e.end_date, '%Y-%m-%d') as formatted_end_date
+        FROM events e 
+        ORDER BY e.created_at DESC LIMIT 5";
+    $result = $conn->query($query);
+    $recent_events = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $recent_events[] = $row;
+        }
+    }
+
+    // Get recent registrations with user and event details
+    $query = "SELECT er.*, u.first_name, u.last_name, e.title as event_title,
+        DATE_FORMAT(er.registration_date, '%Y-%m-%d %H:%i') as formatted_date
+        FROM event_registrations er 
+        JOIN users u ON er.user_id = u.id 
+        JOIN events e ON er.event_id = e.id 
+        ORDER BY er.registration_date DESC LIMIT 5";
+    $result = $conn->query($query);
+    $recent_registrations = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $recent_registrations[] = $row;
+        }
+    }
+
+    // Get recent payments with details
+    $query = "SELECT ep.*, e.title as event_title, u.first_name, u.last_name,
+        DATE_FORMAT(ep.created_at, '%Y-%m-%d %H:%i') as payment_date,
+        DATE_FORMAT(ep.updated_at, '%Y-%m-%d %H:%i') as updated_date
+        FROM event_payments ep
+        JOIN events e ON ep.event_id = e.id
+        JOIN users u ON ep.user_id = u.id
+        ORDER BY ep.created_at DESC LIMIT 5";
+    $result = $conn->query($query);
+    $recent_payments = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $recent_payments[] = $row;
+        }
+    }
+
+    // Get registration data for chart
+    $query = "SELECT DATE(registration_date) as date, COUNT(*) as count 
+        FROM event_registrations 
+        WHERE registration_date >= DATE_SUB(NOW(), INTERVAL 30 DAY) 
+        GROUP BY DATE(registration_date) 
+        ORDER BY date";
+    $result = $conn->query($query);
+    $registration_data = [
+        'labels' => [],
+        'values' => []
+    ];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $registration_data['labels'][] = date('M d', strtotime($row['date']));
+            $registration_data['values'][] = $row['count'];
+        }
+    }
+
+    // Get event status distribution
+    $query = "SELECT status, COUNT(*) as count 
+        FROM events 
+        GROUP BY status 
+        ORDER BY count DESC";
+    $result = $conn->query($query);
+    $category_data = [
+        'labels' => [],
+        'values' => []
+    ];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $category_data['labels'][] = ucfirst($row['status']);
+            $category_data['values'][] = $row['count'];
+        }
+    }
+
+} catch (Exception $e) {
+    // Log error and set default values
+    error_log("Dashboard Error: " . $e->getMessage());
+    $error_message = "An error occurred while loading the dashboard data.";
 }
 
 // Get chart data
@@ -179,8 +259,30 @@ if ($result) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <link rel="stylesheet" href="../assets/css-admin/adminDash.css">
+    
     <style>
+        :root {
+            --sidebar-width: 260px;
+            --topbar-height: 70px;
+            --primary-color: #044721;
+            --secondary-color: #6366f1;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+            --dark-color: #1f2937;
+            --light-bg: #f8fafc;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--light-bg);
+            margin: 0;
+            padding: 0;
+        }
+
         /* Sidebar Styles */
         .sidebar {
             position: fixed;
@@ -662,6 +764,12 @@ if ($result) {
                 </a>
             </li>
             <li class="sidebar-item">
+                <a href="./payments/manage-payments.php" class="sidebar-link">
+                    <i class="bi bi-cash-coin"></i>
+                    <span>Payments</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
                 <a href="./settings/settings.php" class="sidebar-link">
                     <i class="bi bi-gear"></i>
                     <span>Settings</span>
@@ -901,15 +1009,15 @@ if ($result) {
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                     <?php if ($payment['status'] === 'pending'): ?>
-                                                        <button class="btn btn-outline-success" onclick="approvePayment(<?php echo $payment['id']; ?>)">
-                                                            <i class="bi bi-check"></i>
+                                                        <button class="btn btn-outline-success" onclick="verifyPayment(<?php echo $payment['id']; ?>)">
+                                                            <i class="bi bi-check-circle"></i> Verify
                                                         </button>
                                                         <button class="btn btn-outline-danger" onclick="rejectPayment(<?php echo $payment['id']; ?>)">
-                                                            <i class="bi bi-x"></i>
+                                                            <i class="bi bi-x-circle"></i> Reject
                                                         </button>
                                                     <?php endif; ?>
-                                                    <button class="btn btn-outline-primary" onclick="viewPayment(<?php echo $payment['id']; ?>)">
-                                                        <i class="bi bi-eye"></i>
+                                                    <button class="btn btn-outline-primary" onclick="viewPaymentDetails(<?php echo $payment['id']; ?>)">
+                                                        <i class="bi bi-eye"></i> View
                                                     </button>
                                                 </div>
                                             </td>
@@ -932,109 +1040,127 @@ if ($result) {
         document.addEventListener('DOMContentLoaded', function() {
             initializeDashboard();
             setupSidebar();
+            setupEventHandlers();
         });
 
         function initializeDashboard() {
-            displayDashboard({
-                statistics: <?php echo json_encode($stats); ?>,
-                recent_events: <?php echo json_encode($recent_events); ?>,
-                recent_registrations: <?php echo json_encode($recent_registrations); ?>,
-                registration_data: <?php echo json_encode($registration_data); ?>,
-                category_data: <?php echo json_encode($category_data); ?>,
-                payment_stats: <?php echo json_encode($payment_stats); ?>,
-                recent_payments: <?php echo json_encode($recent_payments); ?>
-            });
-            setupNotifications();
+            try {
+                const dashboardData = {
+                    statistics: <?php echo json_encode($stats); ?>,
+                    recent_events: <?php echo json_encode($recent_events); ?>,
+                    recent_registrations: <?php echo json_encode($recent_registrations); ?>,
+                    registration_data: <?php echo json_encode($registration_data); ?>,
+                    category_data: <?php echo json_encode($category_data); ?>,
+                    recent_payments: <?php echo json_encode($recent_payments); ?>
+                };
+
+                displayDashboard(dashboardData);
+                setupNotifications();
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                showError('Failed to initialize dashboard. Please refresh the page.');
+            }
         }
 
-        function setupSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const isMobile = window.innerWidth <= 768;
-            
-            // Set initial state
-            if (isMobile) {
-                sidebar.classList.add('collapsed');
-                mainContent.classList.add('expanded');
-            }
-            
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('collapsed');
-                    mainContent.classList.toggle('expanded');
+        function setupEventHandlers() {
+            // Payment approval handler
+            window.approvePayment = function(paymentId) {
+                if (!confirm('Are you sure you want to approve this payment?')) {
+                    return;
+                }
+                
+                showLoading();
+                
+                fetch('../api/approve-payment.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        payment_id: paymentId,
+                        notes: document.getElementById('approvalNotes')?.value || null
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        showSuccess('Payment approved successfully!');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showError(data.message || 'Failed to approve payment');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Error:', error);
+                    showError('Failed to approve payment. Please try again later.');
                 });
-            }
-            
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                const isMobile = window.innerWidth <= 768;
-                if (isMobile) {
-                    sidebar.classList.add('collapsed');
-                    mainContent.classList.add('expanded');
-                } else {
-                    sidebar.classList.remove('collapsed');
-                    mainContent.classList.remove('expanded');
-                }
-            });
-            
-            // Close sidebar when clicking outside on mobile
-            document.addEventListener('click', function(e) {
-                if (window.innerWidth <= 768 && 
-                    !sidebar.contains(e.target) && 
-                    !sidebarToggle.contains(e.target) && 
-                    !sidebar.classList.contains('collapsed')) {
-                    sidebar.classList.add('collapsed');
-                    mainContent.classList.add('expanded');
-                }
-            });
+            };
 
-            // Set active menu item based on current page
-            const currentPath = window.location.pathname;
-            const menuItems = document.querySelectorAll('.sidebar-link');
-            menuItems.forEach(item => {
-                if (item.getAttribute('href') === currentPath.split('/').pop()) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
+            // Payment rejection handler
+            window.rejectPayment = function(paymentId) {
+                if (!confirm('Are you sure you want to reject this payment?')) {
+                    return;
                 }
-            });
-
-            // Add tooltips for collapsed state
-            const sidebarLinks = document.querySelectorAll('.sidebar-link');
-            sidebarLinks.forEach(link => {
-                const text = link.querySelector('span').textContent;
-                link.setAttribute('title', text);
-            });
-        }
-
-        function setupNotifications() {
-            const notificationBtn = document.getElementById('notificationBtn');
-            const notificationModal = new bootstrap.Modal(document.getElementById('notificationModal'));
-            if (notificationBtn) {
-                notificationBtn.addEventListener('click', function() {
-                    notificationModal.show();
+                
+                showLoading();
+                
+                fetch('../api/reject-payment.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        payment_id: paymentId,
+                        reason: document.getElementById('rejectionReason')?.value || null,
+                        notes: document.getElementById('rejectionNotes')?.value || null
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        showSuccess('Payment rejected successfully!');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showError(data.message || 'Failed to reject payment');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Error:', error);
+                    showError('Failed to reject payment. Please try again later.');
                 });
-            }
+            };
+
+            // View payment handler
+            window.viewPayment = function(paymentId) {
+                window.location.href = `./payments/view-payment.php?id=${paymentId}`;
+            };
         }
 
         function displayDashboard(data) {
-            // Hide loading spinner and show content
-            document.getElementById('loadingSpinner').classList.add('d-none');
-            document.getElementById('dashboardContent').classList.remove('d-none');
+            try {
+                // Hide loading spinner and show content
+                document.getElementById('loadingSpinner').classList.add('d-none');
+                document.getElementById('dashboardContent').classList.remove('d-none');
 
-            // Display statistics
-            displayStatistics(data.statistics);
-            
-            // Display tables
-            displayRecentEvents(data.recent_events);
-            displayRecentRegistrations(data.recent_registrations);
-            
-            // Initialize charts
-            initializeRegistrationsChart(data.registration_data);
-            initializeCategoriesChart(data.category_data);
-            displayPaymentStatistics(data.payment_stats);
-            displayRecentPayments(data.recent_payments);
+                // Display statistics
+                displayStatistics(data.statistics);
+                
+                // Display tables
+                displayRecentEvents(data.recent_events);
+                displayRecentRegistrations(data.recent_registrations);
+                displayRecentPayments(data.recent_payments);
+                
+                // Initialize charts
+                initializeRegistrationsChart(data.registration_data);
+                initializeCategoriesChart(data.category_data);
+            } catch (error) {
+                console.error('Error displaying dashboard:', error);
+                showError('Failed to display dashboard data. Please refresh the page.');
+            }
         }
 
         function displayStatistics(stats) {
@@ -1046,10 +1172,6 @@ if ($result) {
                                 <div>
                                     <h6 class="card-title mb-0 opacity-75">Total Events</h6>
                                     <h2 class="mt-2 mb-0">${stats.total_events}</h2>
-                                    <div class="trend-indicator">
-                                        <i class="bi bi-arrow-up-short text-success"></i>
-                                        <span>+12% from last month</span>
-                                    </div>
                                 </div>
                                 <i class="bi bi-calendar-event stat-icon"></i>
                             </div>
@@ -1063,10 +1185,6 @@ if ($result) {
                                 <div>
                                     <h6 class="card-title mb-0 opacity-75">Total Users</h6>
                                     <h2 class="mt-2 mb-0">${stats.total_users}</h2>
-                                    <div class="trend-indicator">
-                                        <i class="bi bi-arrow-up-short text-white"></i>
-                                        <span>+8% from last month</span>
-                                    </div>
                                 </div>
                                 <i class="bi bi-people stat-icon"></i>
                             </div>
@@ -1080,10 +1198,6 @@ if ($result) {
                                 <div>
                                     <h6 class="card-title mb-0 opacity-75">Total Registrations</h6>
                                     <h2 class="mt-2 mb-0">${stats.total_registrations}</h2>
-                                    <div class="trend-indicator">
-                                        <i class="bi bi-arrow-up-short text-white"></i>
-                                        <span>+15% from last month</span>
-                                    </div>
                                 </div>
                                 <i class="bi bi-ticket-perforated stat-icon"></i>
                             </div>
@@ -1096,11 +1210,7 @@ if ($result) {
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="card-title mb-0 opacity-75">Active Events</h6>
-                                    <h2 class="mt-2 mb-0">${stats.active_events || 8}</h2>
-                                    <div class="trend-indicator">
-                                        <i class="bi bi-arrow-down-short text-danger"></i>
-                                        <span>-3% from last month</span>
-                                    </div>
+                                    <h2 class="mt-2 mb-0">${stats.active_events}</h2>
                                 </div>
                                 <i class="bi bi-lightning stat-icon"></i>
                             </div>
@@ -1124,7 +1234,7 @@ if ($result) {
                     <td>
                         <span class="badge bg-light text-dark">${escapeHtml(event.event_category || 'General')}</span>
                     </td>
-                    <td>${formatDate(event.event_date)}</td>
+                    <td>${formatDate(event.formatted_start_date)}</td>
                     <td>
                         <span class="status-dot bg-${getStatusColor(event.status)}"></span>
                         <span class="badge bg-${getStatusColor(event.status)}">
@@ -1306,88 +1416,35 @@ if ($result) {
             });
         }
 
-        function displayPaymentStatistics(stats) {
-            const statsHtml = `
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-card bg-primary text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="card-title mb-0 opacity-75">Total Payments</h6>
-                                    <h2 class="mt-2 mb-0">${stats.total_payments}</h2>
-                                </div>
-                                <i class="bi bi-cash-coin stat-icon"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-card bg-warning text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="card-title mb-0 opacity-75">Pending Payments</h6>
-                                    <h2 class="mt-2 mb-0">${stats.pending_payments}</h2>
-                                </div>
-                                <i class="bi bi-clock-history stat-icon"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-card bg-success text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="card-title mb-0 opacity-75">Approved Payments</h6>
-                                    <h2 class="mt-2 mb-0">${stats.approved_payments}</h2>
-                                </div>
-                                <i class="bi bi-check-circle stat-icon"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-card bg-danger text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="card-title mb-0 opacity-75">Rejected Payments</h6>
-                                    <h2 class="mt-2 mb-0">${stats.rejected_payments}</h2>
-                                </div>
-                                <i class="bi bi-x-circle stat-icon"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('statisticsCards').innerHTML += statsHtml;
-        }
-
         function displayRecentPayments(payments) {
             const paymentsTable = document.querySelector('#recentPaymentsTable tbody');
+            if (!paymentsTable) return;
+
             paymentsTable.innerHTML = payments.map(payment => `
                 <tr>
-                    <td>
-                        <div>
-                            <strong>${escapeHtml(payment.event_title)}</strong>
-                            <div class="text-muted small">${escapeHtml(payment.first_name)} ${escapeHtml(payment.last_name)}</div>
-                        </div>
-                    </td>
+                    <td>${escapeHtml(payment.event_title)}</td>
                     <td>${escapeHtml(payment.first_name)} ${escapeHtml(payment.last_name)}</td>
-                    <td>₱${escapeHtml(number_format($payment.amount, 2))}</td>
+                    <td>₱${parseFloat(payment.amount).toFixed(2)}</td>
                     <td>${escapeHtml(payment.payment_method)}</td>
                     <td>${escapeHtml(payment.reference_number)}</td>
                     <td>${escapeHtml(payment.payment_date)}</td>
                     <td>
-                        <span class="badge bg-${getStatusColor(payment.status)}">
-                            ${escapeHtml(ucfirst($payment.status))}
+                        <span class="badge bg-${getPaymentStatusColor(payment.status)}">
+                            ${escapeHtml(payment.status.charAt(0).toUpperCase() + payment.status.slice(1))}
                         </span>
                     </td>
                     <td>
                         <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary" onclick="viewPayment(${payment.id})">
-                                <i class="bi bi-eye"></i>
+                            ${payment.status === 'pending' ? `
+                                <button class="btn btn-outline-success" onclick="verifyPayment(${payment.id})">
+                                    <i class="bi bi-check-circle"></i> Verify
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="rejectPayment(${payment.id})">
+                                    <i class="bi bi-x-circle"></i> Reject
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-outline-primary" onclick="viewPaymentDetails(${payment.id})">
+                                <i class="bi bi-eye"></i> View
                             </button>
                         </div>
                     </td>
@@ -1395,9 +1452,67 @@ if ($result) {
             `).join('');
         }
 
+        function getPaymentStatusColor(status) {
+            switch (status?.toLowerCase()) {
+                case 'approved':
+                    return 'success';
+                case 'pending':
+                    return 'warning';
+                case 'rejected':
+                    return 'danger';
+                default:
+                    return 'secondary';
+            }
+        }
+
         // Utility functions
+        function showLoading() {
+            const spinner = document.getElementById('loadingSpinner');
+            if (spinner) spinner.classList.remove('d-none');
+        }
+
+        function hideLoading() {
+            const spinner = document.getElementById('loadingSpinner');
+            if (spinner) spinner.classList.add('d-none');
+        }
+
+        function showError(message) {
+            const alert = document.getElementById('errorAlert');
+            if (alert) {
+                alert.textContent = message;
+                alert.classList.remove('d-none');
+                setTimeout(() => alert.classList.add('d-none'), 5000);
+            }
+        }
+
+        function showSuccess(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed bottom-0 end-0 m-3';
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', () => {
+                document.body.removeChild(toast);
+            });
+        }
+
         function escapeHtml(unsafe) {
-            return unsafe
+            if (unsafe == null) return '';
+            return String(unsafe)
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
@@ -1481,43 +1596,156 @@ if ($result) {
             approvalModal.show();
         }
 
-        function approvePayment(paymentId) {
-            if (!confirm('Are you sure you want to approve this payment?')) {
-                return;
+        function setupSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const isMobile = window.innerWidth <= 768;
+            
+            // Set initial state
+            if (isMobile) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
             }
+            
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                });
+            }
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('expanded');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('expanded');
+                }
+            });
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth <= 768 && 
+                    !sidebar.contains(e.target) && 
+                    !sidebarToggle.contains(e.target) && 
+                    !sidebar.classList.contains('collapsed')) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('expanded');
+                }
+            });
+
+            // Set active menu item based on current page
+            const currentPath = window.location.pathname;
+            const menuItems = document.querySelectorAll('.sidebar-link');
+            menuItems.forEach(item => {
+                if (item.getAttribute('href') === currentPath.split('/').pop()) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            // Add tooltips for collapsed state
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+            sidebarLinks.forEach(link => {
+                const text = link.querySelector('span').textContent;
+                link.setAttribute('title', text);
+            });
+        }
+
+        function setupNotifications() {
+            const notificationBtn = document.getElementById('notificationBtn');
+            const notificationModal = new bootstrap.Modal(document.getElementById('notificationModal'));
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', function() {
+                    notificationModal.show();
+                });
+            }
+        }
+
+        function verifyPayment(paymentId) {
+            // Show loading state
+            showLoading();
+            
+            // Fetch payment details
+            fetch(`../api/get-payment-details.php?id=${paymentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        // Populate modal with payment details
+                        document.getElementById('paymentId').value = paymentId;
+                        document.getElementById('paymentDetails').innerHTML = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Event:</strong> ${escapeHtml(data.payment.event_title)}</p>
+                                    <p><strong>Student:</strong> ${escapeHtml(data.payment.student_name)}</p>
+                                    <p><strong>Amount:</strong> ₱${parseFloat(data.payment.amount).toFixed(2)}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Method:</strong> ${escapeHtml(data.payment.payment_method)}</p>
+                                    <p><strong>Reference:</strong> ${escapeHtml(data.payment.reference_number)}</p>
+                                    <p><strong>Date:</strong> ${escapeHtml(data.payment.payment_date)}</p>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Show the modal
+                        const modal = new bootstrap.Modal(document.getElementById('paymentVerificationModal'));
+                        modal.show();
+                    } else {
+                        showError(data.message || 'Failed to load payment details');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Error:', error);
+                    showError('Failed to load payment details');
+                });
+        }
+
+        function confirmPaymentVerification() {
+            const paymentId = document.getElementById('paymentId').value;
+            const notes = document.getElementById('verificationNotes').value;
             
             showLoading();
             
-            fetch('../api/approve-payment.php', {
+            fetch('../api/verify-payment.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    payment_id: paymentId
+                    payment_id: paymentId,
+                    notes: notes
                 })
             })
             .then(response => response.json())
             .then(data => {
                 hideLoading();
                 if (data.success) {
-                    showSuccess('Payment approved successfully!');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1500);
+                    showSuccess('Payment verified successfully!');
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('paymentVerificationModal')).hide();
+                    // Refresh the page to show updated status
+                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    showError(data.message || 'Failed to approve payment. Please try again.');
+                    showError(data.message || 'Failed to verify payment');
                 }
             })
             .catch(error => {
                 hideLoading();
                 console.error('Error:', error);
-                showError('Failed to approve payment. Please try again later.');
+                showError('Failed to verify payment');
             });
         }
 
         function rejectPayment(paymentId) {
-            if (!confirm('Are you sure you want to reject this payment?')) {
+            if (!confirm('Are you sure you want to reject this payment? This action cannot be undone.')) {
                 return;
             }
             
@@ -1529,7 +1757,8 @@ if ($result) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    payment_id: paymentId
+                    payment_id: paymentId,
+                    reason: 'Payment verification failed'
                 })
             })
             .then(response => response.json())
@@ -1537,21 +1766,19 @@ if ($result) {
                 hideLoading();
                 if (data.success) {
                     showSuccess('Payment rejected successfully!');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1500);
+                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    showError(data.message || 'Failed to reject payment. Please try again.');
+                    showError(data.message || 'Failed to reject payment');
                 }
             })
             .catch(error => {
                 hideLoading();
                 console.error('Error:', error);
-                showError('Failed to reject payment. Please try again later.');
+                showError('Failed to reject payment');
             });
         }
 
-        function viewPayment(paymentId) {
+        function viewPaymentDetails(paymentId) {
             window.location.href = `./payments/view-payment.php?id=${paymentId}`;
         }
     </script>
@@ -1628,5 +1855,37 @@ if ($result) {
             </div>
         </div>
     </div>
+
+    <!-- Add Payment Verification Modal -->
+    <div class="modal fade" id="paymentVerificationModal" tabindex="-1" aria-labelledby="paymentVerificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentVerificationModalLabel">Verify Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentVerificationForm">
+                        <input type="hidden" id="paymentId" name="paymentId">
+                        <div class="mb-3">
+                            <label for="verificationNotes" class="form-label">Verification Notes</label>
+                            <textarea class="form-control" id="verificationNotes" name="verificationNotes" rows="3" placeholder="Add any notes about the payment verification..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payment Details</label>
+                            <div id="paymentDetails" class="p-3 bg-light rounded">
+                                <!-- Payment details will be loaded here -->
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="confirmPaymentVerification()">Confirm Verification</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
+

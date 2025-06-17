@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $payment_methods_str = implode(',', $payment_methods);
-                $stmt->bind_param("sssssissssids", $title, $description, $start_date, $end_date, 
+                $stmt->bind_param("sssssisissids", $title, $description, $start_date, $end_date, 
                                 $location, $capacity, $registration_deadline, $status, $admin_id, $image,
                                 $payment_required, $payment_amount, $payment_methods_str);
                 
@@ -120,11 +120,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $payment_methods_str = implode(',', $payment_methods);
                 if ($image) {
-                    $stmt->bind_param("sssssissssdsi", $title, $description, $start_date, $end_date, 
+                    $stmt->bind_param("sssssisissdsi", $title, $description, $start_date, $end_date, 
                                     $location, $capacity, $registration_deadline, $status, $image,
                                     $payment_required, $payment_amount, $payment_methods_str, $event_id);
                 } else {
-                    $stmt->bind_param("sssssissdsi", $title, $description, $start_date, $end_date, 
+                    $stmt->bind_param("sssssisdsi", $title, $description, $start_date, $end_date, 
                                     $location, $capacity, $registration_deadline, $status,
                                     $payment_required, $payment_amount, $payment_methods_str, $event_id);
                 }
@@ -202,8 +202,30 @@ if ($action === 'list') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../assets/css-admin/adminDash.css">
+    
     <style>
+        :root {
+            --sidebar-width: 260px;
+            --topbar-height: 70px;
+            --primary-color: #044721;
+            --secondary-color: #6366f1;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+            --dark-color: #1f2937;
+            --light-bg: #f8fafc;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--light-bg);
+            margin: 0;
+            padding: 0;
+        }
+
         /* Sidebar Styles */
         .sidebar {
             position: fixed;
@@ -578,6 +600,12 @@ if ($action === 'list') {
                 <a href="./analytics/analytics.php" class="sidebar-link">
                     <i class="bi bi-bar-chart"></i>
                     <span>Analytics</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="./payments/manage-payments.php" class="sidebar-link">
+                    <i class="bi bi-cash-coin"></i>
+                    <span>Payments</span>
                 </a>
             </li>
             <li class="sidebar-item">

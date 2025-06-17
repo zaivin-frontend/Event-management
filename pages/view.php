@@ -61,7 +61,218 @@ try {
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../home.css">
-    <link rel="stylesheet" href="../assets/css/view.css" />
+    <link rel="stylesheet" href="../assets/styles/view.css" />
+    <style>
+        .navbar {
+            background-color: #000000 !important;
+        }
+
+        .navbar-brand {
+            color: #044721 !important;
+        }
+
+        .navbar-brand i {
+            color: #044721;
+        }
+
+        .nav-link {
+            color: #044721 !important;
+        }
+
+        .nav-link:hover {
+            color: #033017 !important;
+        }
+
+        .btn-dark {
+            background-color: #000000 !important;
+            border-color: #000000 !important;
+        }
+
+        .btn-dark:hover {
+            background-color: #333333 !important;
+            border-color: #333333 !important;
+        }
+
+        .text-primary {
+            color: #044721 !important;
+        }
+
+        .btn-primary {
+            background-color: #044721 !important;
+            border-color: #044721 !important;
+        }
+
+        .btn-primary:hover {
+            background-color: #033017 !important;
+            border-color: #033017 !important;
+        }
+
+        .event-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 100%;
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .event-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 0.8rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .category-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            font-size: 0.8rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .event-image {
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .event-card:hover .event-image {
+            transform: scale(1.05);
+        }
+
+        .event-details {
+            padding: 1.5rem;
+        }
+
+        .event-date, .event-location {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-description {
+            color: #666;
+            font-size: 0.9rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .filter-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .filter-section h5 {
+            color: #000000;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            padding: 0.8rem 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #044721;
+            box-shadow: 0 0 0 0.2rem rgba(4, 71, 33, 0.25);
+        }
+
+        .btn-primary {
+            padding: 0.8rem 1.5rem;
+            font-weight: 500;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(4, 71, 33, 0.2);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: #000000;
+        }
+
+        .event-count {
+            background: #044721;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+
+        .no-events i {
+            font-size: 3rem;
+            color: #044721;
+            margin-bottom: 1rem;
+        }
+
+        .pagination {
+            margin-top: 2rem;
+            justify-content: center;
+        }
+
+        .pagination .page-link {
+            color: #044721;
+            border-radius: 5px;
+            margin: 0 3px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #044721;
+            border-color: #044721;
+        }
+
+        @media (max-width: 768px) {
+            .event-card {
+                margin-bottom: 1rem;
+            }
+            
+            .filter-section {
+                margin-bottom: 1.5rem;
+            }
+        }
+    </style>
 </head>
 
 <body>

@@ -421,6 +421,12 @@ require_once '../../database/config.php';
                 </a>
             </li>
             <li class="sidebar-item">
+                <a href="../payments/manage-payments.php" class="sidebar-link">
+                    <i class="bi bi-cash-coin"></i>
+                    <span>Payments</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
                 <a href="../settings/settings.php" class="sidebar-link">
                     <i class="bi bi-gear"></i>
                     <span>Settings</span>

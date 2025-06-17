@@ -31,7 +31,7 @@ unset($_SESSION['success']);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="../assets/css/forgot.css" />
+    <link rel="stylesheet" href="../assets/styles/forgot.css" />
     <link rel="stylesheet" href="../home.css" />
 
 </head>

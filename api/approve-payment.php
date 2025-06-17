@@ -24,29 +24,61 @@ $payment_id = $data['payment_id'];
 $conn->begin_transaction();
 
 try {
-    // Update payment status
-    $stmt = $conn->prepare("UPDATE event_payments SET status = 'approved' WHERE id = ?");
-    $stmt->bind_param("i", $payment_id);
-    $stmt->execute();
-
     // Get payment details
-    $stmt = $conn->prepare("SELECT event_id, user_id FROM event_payments WHERE id = ?");
+    $stmt = $conn->prepare("
+        SELECT event_id, user_id, payment_method, reference_number, payment_details 
+        FROM event_payments 
+        WHERE id = ?
+    ");
     $stmt->bind_param("i", $payment_id);
     $stmt->execute();
     $result = $stmt->get_result();
     $payment = $result->fetch_assoc();
 
-    if ($payment) {
-        // Update registration status
-        $stmt = $conn->prepare("UPDATE event_registrations SET status = 'confirmed' WHERE event_id = ? AND user_id = ?");
-        $stmt->bind_param("ii", $payment['event_id'], $payment['user_id']);
-        $stmt->execute();
+    if (!$payment) {
+        throw new Exception('Payment not found');
     }
+
+    // Update payment status
+    $stmt = $conn->prepare("
+        UPDATE event_payments 
+        SET status = 'approved',
+            payment_details = JSON_MERGE_PATCH(payment_details, ?),
+            updated_at = NOW()
+        WHERE id = ?
+    ");
+    
+    $payment_details = json_encode([
+        'admin_approval' => [
+            'admin_id' => $_SESSION['admin_id'],
+            'timestamp' => date('Y-m-d H:i:s'),
+            'notes' => $data['notes'] ?? null
+        ]
+    ]);
+    $stmt->bind_param("si", $payment_details, $payment_id);
+    $stmt->execute();
+
+    // Update registration status
+    $stmt = $conn->prepare("
+        UPDATE event_registrations 
+        SET status = 'confirmed' 
+        WHERE event_id = ? AND user_id = ?
+    ");
+    $stmt->bind_param("ii", $payment['event_id'], $payment['user_id']);
+    $stmt->execute();
 
     // Commit transaction
     $conn->commit();
 
-    echo json_encode(['success' => true, 'message' => 'Payment approved successfully']);
+    echo json_encode([
+        'success' => true, 
+        'message' => 'Payment approved successfully',
+        'payment' => [
+            'id' => $payment_id,
+            'reference' => $payment['reference_number'],
+            'method' => $payment['payment_method']
+        ]
+    ]);
 } catch (Exception $e) {
     // Rollback transaction on error
     $conn->rollback();

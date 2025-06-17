@@ -29,12 +29,30 @@ try {
         exit();
     }
 
+    // Check for associated pending payments and cancel them
+    $stmt_payment = $conn->prepare("SELECT id FROM event_payments WHERE user_id = ? AND event_id = ? AND status = 'pending'");
+    $stmt_payment->bind_param("ii", $user_id, $event_id);
+    $stmt_payment->execute();
+    $result_payment = $stmt_payment->get_result();
+
+    if ($result_payment->num_rows > 0) {
+        $stmt_cancel_payment = $conn->prepare("UPDATE event_payments SET status = 'cancelled' WHERE user_id = ? AND event_id = ? AND status = 'pending'");
+        $stmt_cancel_payment->bind_param("ii", $user_id, $event_id);
+        $stmt_cancel_payment->execute();
+    }
+
     // Cancel the registration
     $stmt = $conn->prepare("UPDATE event_registrations SET status = 'cancelled' WHERE user_id = ? AND event_id = ?");
     $stmt->bind_param("ii", $user_id, $event_id);
     
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Successfully cancelled event registration']);
+        // Decrement the current_slots for the event
+        $stmt_update_slots = $conn->prepare("UPDATE events SET current_slots = current_slots - 1 WHERE id = ? AND current_slots > 0");
+        $stmt_update_slots->bind_param("i", $event_id);
+        $stmt_update_slots->execute();
+        $stmt_update_slots->close();
+
+        echo json_encode(['success' => true, 'message' => 'Successfully cancelled event registration and freed up a slot.']);
     } else {
         throw new Exception("Failed to cancel registration");
     }

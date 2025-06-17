@@ -24,7 +24,155 @@ $dashboard_url = $user_role === 'admin' ? '../admin/adminDash.php' : '../student
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../assets/styles/students.css">
-    <link rel="stylesheet" href="../assets/css/logout.css">
+    <style>
+        .logout-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            background-color: #f8f9fa;
+        }
+
+        .logout-card {
+            width: 100%;
+            max-width: 500px;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            background: white;
+            transition: transform 0.2s;
+        }
+
+        .logout-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .logout-icon {
+            font-size: 3rem;
+            color: #044721;
+            margin-bottom: 1rem;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            background-color: #e8f5e9;
+            color: #044721;
+        }
+
+        .alert i {
+            color: #044721;
+        }
+
+        .btn-danger {
+            background-color: #000000;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-danger:hover {
+            background-color: #333333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-outline-secondary {
+            border-color: #044721;
+            color: #044721;
+            padding: 0.8rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-outline-secondary:hover {
+            background-color: #044721;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(4, 71, 33, 0.2);
+        }
+
+        .back-link {
+            color: #044721;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            color: #033017;
+            transform: translateX(-5px);
+        }
+
+        .spinner-border {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.15em;
+        }
+
+        .error-message {
+            display: none;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 10px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success-message {
+            display: none;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 10px;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        /* Update navbar colors */
+        .navbar {
+            background-color: #000000 !important;
+        }
+
+        .navbar-brand {
+            color: #044721 !important;
+        }
+
+        .navbar-brand i {
+            color: #044721;
+        }
+
+        .nav-link {
+            color: #044721 !important;
+        }
+
+        .nav-link:hover {
+            color: #033017 !important;
+        }
+
+        .text-white {
+            color: #044721 !important;
+        }
+
+        /* Update card title color */
+        .card-body h2 {
+            color: #000000;
+        }
+
+        /* Update alert colors */
+        .alert {
+            background-color: #e8f5e9;
+            border-left: 4px solid #044721;
+        }
+
+        .alert strong {
+            color: #000000;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
